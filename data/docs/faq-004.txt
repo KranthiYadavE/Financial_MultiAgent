@@ -1,0 +1,3 @@
+# How to View Transaction History
+
+You can view transactions in the mobile app under Accounts > Transaction History. Filter by date range, category, or amount. Export up to 12 months as PDF or CSV. For statements older than 12 months, visit a branch or use internet banking.

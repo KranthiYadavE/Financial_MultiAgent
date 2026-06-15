@@ -1,0 +1,73 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Orchestrator requests by intent",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(orchestrator_requests_total[5m])) by (intent)",
+          "legendFormat": "{{intent}}"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "title": "Text-to-SQL latency (p95)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(text_to_sql_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "title": "RAG latency (p95)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rag_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "title": "SQL errors",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(text_to_sql_errors_total[5m]))",
+          "legendFormat": "errors/sec"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["financial-agents"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "Financial Multi-Agent Overview",
+  "uid": "fin-agents-overview",
+  "version": 1
+}

@@ -1,0 +1,3 @@
+# Anti-Money Laundering (AML) Policy
+
+Transactions above INR 10 lakhs are flagged for enhanced due diligence. Structuring (splitting large amounts) is prohibited. Suspicious activity must be reported to FIU-IND within 7 days. Cash deposits above INR 50,000 require PAN verification. Cross-border transfers require purpose code declaration.

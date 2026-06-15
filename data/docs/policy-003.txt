@@ -1,0 +1,3 @@
+# Interest Rate and Fee Schedule
+
+Savings account interest: 3.5% per annum, calculated daily and credited quarterly. ATM withdrawals: first 5 free per month, INR 20 per additional withdrawal. NEFT: INR 5 per transaction. RTGS: INR 25 per transaction. Account maintenance: waived if average monthly balance exceeds INR 10,000.

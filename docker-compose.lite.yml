@@ -1,0 +1,170 @@
+# Lighter stack for learning / low-RAM machines (no ELK, no Kafka)
+# Usage: docker compose -f docker-compose.lite.yml up -d --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-finagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finagent_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-financial_gold}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finagent -d financial_gold"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.5
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6333/readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+
+  dlp-agent:
+    build:
+      context: .
+      dockerfile: services/dlp_agent/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      LOG_LEVEL: INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  text-to-sql-agent:
+    build:
+      context: .
+      dockerfile: services/text_to_sql_agent/Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      POSTGRES_USER: finagent
+      POSTGRES_PASSWORD: finagent_dev_password
+      POSTGRES_DB: financial_gold
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rag-agent:
+    build:
+      context: .
+      dockerfile: services/rag_agent/Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      QDRANT_COLLECTION: faq_policies
+      EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    volumes:
+      - ./data/docs:/app/data/docs:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: services/orchestrator/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DLP_AGENT_URL: http://dlp-agent:8001
+      TEXT_TO_SQL_AGENT_URL: http://text-to-sql-agent:8002
+      RAG_AGENT_URL: http://rag-agent:8003
+      KAFKA_BOOTSTRAP_SERVERS: disabled
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    depends_on:
+      dlp-agent:
+        condition: service_healthy
+      text-to-sql-agent:
+        condition: service_healthy
+      rag-agent:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  data-init:
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile
+    environment:
+      POSTGRES_USER: finagent
+      POSTGRES_PASSWORD: finagent_dev_password
+      POSTGRES_DB: financial_gold
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      QDRANT_COLLECTION: faq_policies
+      EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    profiles:
+      - init
+
+volumes:
+  postgres_data:
+  qdrant_data:

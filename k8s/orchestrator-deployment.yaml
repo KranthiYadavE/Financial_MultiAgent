@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+  namespace: financial-agents
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: orchestrator
+  template:
+    metadata:
+      labels:
+        app: orchestrator
+    spec:
+      containers:
+        - name: orchestrator
+          image: financial-agents/orchestrator:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: agent-config
+          env:
+            - name: DLP_AGENT_URL
+              value: http://dlp-agent:8001
+            - name: TEXT_TO_SQL_AGENT_URL
+              value: http://text-to-sql-agent:8002
+            - name: RAG_AGENT_URL
+              value: http://rag-agent:8003
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchestrator
+  namespace: financial-agents
+spec:
+  selector:
+    app: orchestrator
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: LoadBalancer

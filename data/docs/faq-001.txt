@@ -1,0 +1,3 @@
+# Account Opening Requirements
+
+To open a savings account, you need valid government ID (Aadhaar, PAN), proof of address, and a minimum deposit of INR 1,000. KYC verification is mandatory within 30 days. Minor accounts require a guardian's documents.

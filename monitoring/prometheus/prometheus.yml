@@ -1,0 +1,36 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: orchestrator
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["orchestrator:8000"]
+        labels:
+          service: orchestrator
+
+  - job_name: dlp-agent
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["dlp-agent:8001"]
+        labels:
+          service: dlp-agent
+
+  - job_name: text-to-sql-agent
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["text-to-sql-agent:8002"]
+        labels:
+          service: text-to-sql-agent
+
+  - job_name: rag-agent
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["rag-agent:8003"]
+        labels:
+          service: rag-agent
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

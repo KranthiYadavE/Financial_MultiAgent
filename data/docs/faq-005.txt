@@ -1,0 +1,3 @@
+# EMI and Loan Repayment
+
+EMI auto-debit occurs on the 5th of each month. Ensure sufficient balance by the 4th to avoid bounce charges of INR 500. Prepayment is allowed with no penalty after 12 EMIs. Partial prepayment reduces principal and recalculates EMI.

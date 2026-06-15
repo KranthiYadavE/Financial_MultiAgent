@@ -1,0 +1,3 @@
+# Data Privacy Policy
+
+We collect personal data only for KYC, transaction processing, and regulatory compliance. PAN, account numbers, and contact details are encrypted at rest. We never share data with third parties without consent except as required by RBI. Customers may request data export or deletion subject to legal retention periods.

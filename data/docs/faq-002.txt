@@ -1,0 +1,3 @@
+# NEFT and RTGS Transfer Limits
+
+NEFT transfers have no minimum amount and process in hourly batches. RTGS requires a minimum of INR 2 lakhs and settles in real time during banking hours (9 AM - 4:30 PM IST). Daily transfer limits depend on your KYC tier: Tier 1 allows INR 1 lakh/day, Tier 2 allows INR 5 lakhs/day.

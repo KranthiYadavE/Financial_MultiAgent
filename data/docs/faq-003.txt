@@ -1,0 +1,3 @@
+# Transaction Dispute Process
+
+Report unauthorized transactions within 3 working days via the mobile app or branch. We will provisionally credit your account within 10 days while investigating. Provide transaction ID, date, and merchant name. Chargeback for card transactions may take 45-90 days.
