@@ -140,19 +140,6 @@ curl -X POST http://localhost:8000/chat ^
 python scripts/test_api.py
 ```
 
-## Service URLs
-
-| Service | URL | Purpose |
-|---------|-----|---------|
-| Orchestrator | http://localhost:8000 | Main `/chat` API |
-| DLP Agent | http://localhost:8001 | `/mask`, `/validate-sql` |
-| Text-to-SQL | http://localhost:8002 | `/query` |
-| RAG Agent | http://localhost:8003 | `/ask` |
-| Grafana | http://localhost:3000 | admin / admin |
-| Prometheus | http://localhost:9090 | Metrics |
-| Kibana | http://localhost:5601 | Log search |
-| Qdrant | http://localhost:6333/dashboard | Vector DB UI |
-| PostgreSQL | localhost:5432 | finagent / finagent_dev_password |
 
 ## API Examples
 
