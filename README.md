@@ -10,20 +10,24 @@ A **production-style**, **100% open-source** learning project for building a fin
 | Policy / FAQ answers | RAG | Qdrant + embeddings |
 | PII masking | DLP | Regex + hard filtering |
 | Request routing | Orchestrator | Keyword + Ollama classifier |
-| Event workflows | Kafka | agent.requests / agent.responses |
+| Event workflows | Kafka | Intent topics + partitions + DLQ |
+| Caching / rate limits | Redis | Response cache + throttling |
 | Logs | ELK | Elasticsearch + Logstash + Kibana |
 | Metrics | Prometheus + Grafana | Latency, errors, intent counts |
 
 ## Architecture
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for diagrams.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for diagrams.  
+**Study guides:** [FILE_GUIDE.md](docs/FILE_GUIDE.md) · [KAFKA_GUIDE.md](docs/KAFKA_GUIDE.md)
 
 ```
-User → Orchestrator → [DLP] → Router → Text-to-SQL | RAG | DLP
-                              ↓
-                            Kafka
-                              ↓
-                    PostgreSQL / Qdrant
+User → Orchestrator → [DLP] → Router → Kafka (intent topics)
+                              ↓              ↓
+                           Redis         sql/rag/dlp/fallback workers
+                                              ↓
+                                    Text-to-SQL | RAG | DLP agents
+                                              ↓
+                                    PostgreSQL / Qdrant
 ```
 
 ## Project Structure
@@ -33,12 +37,14 @@ GENAI_TESTING/
 ├── docker-compose.yml          # Full stack (all services)
 ├── shared/                     # DLP, logging, LLM client, config
 ├── services/
-│   ├── orchestrator/           # MCP-style router + Kafka
+│   ├── orchestrator/           # Router + Kafka producer
+│   ├── workers/                # Intent-specific Kafka consumers
 │   ├── text_to_sql_agent/      # NL → SQL → transactions
 │   ├── rag_agent/              # FAQ/policy semantic search
 │   └── dlp_agent/              # PII masking + SQL validation
 ├── scripts/
 │   ├── generate_sample_data.py # Bronze → Silver → Gold + docs
+│   ├── init_kafka_topics.sh    # Kafka topic + partition setup
 │   ├── load_to_postgres.py
 │   ├── ingest_embeddings.py
 │   └── test_api.py             # Smoke tests
@@ -51,6 +57,9 @@ GENAI_TESTING/
 ├── monitoring/                 # Prometheus, Grafana, Logstash
 ├── k8s/                        # Kubernetes manifests (learning)
 └── docs/
+    ├── FILE_GUIDE.md           # What every file does
+    ├── KAFKA_GUIDE.md          # Topics, partitions, DLQ, scaling labs
+    ├── ARCHITECTURE.md         # System diagrams
     ├── BUILD_CHECKLIST.md      # Week-by-week tasks
     └── LEARNING_ROADMAP.md     # What to study per component
 ```

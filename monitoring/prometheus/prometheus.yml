@@ -31,6 +31,20 @@ scrape_configs:
         labels:
           service: rag-agent
 
+  - job_name: sql-worker
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["sql-worker:8011"]
+        labels:
+          service: sql-worker
+
+  - job_name: rag-worker
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["rag-worker:8012"]
+        labels:
+          service: rag-worker
+
   - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]

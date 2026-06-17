@@ -48,6 +48,16 @@ services:
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
 
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   dlp-agent:
     build:
       context: .
@@ -124,6 +134,9 @@ services:
       TEXT_TO_SQL_AGENT_URL: http://text-to-sql-agent:8002
       RAG_AGENT_URL: http://rag-agent:8003
       KAFKA_BOOTSTRAP_SERVERS: disabled
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_ENABLED: "true"
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
     depends_on:
@@ -132,6 +145,8 @@ services:
       text-to-sql-agent:
         condition: service_healthy
       rag-agent:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"

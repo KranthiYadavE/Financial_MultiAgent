@@ -23,8 +23,24 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     kafka_bootstrap_servers: str = "localhost:9092"
-    kafka_topic_requests: str = "agent.requests"
     kafka_topic_responses: str = "agent.responses"
+    kafka_topic_dlq: str = "agent.requests.dlq"
+    kafka_topic_requests: str = "agent.requests"  # legacy — use intent topics instead
+    kafka_max_retries: int = 3
+    kafka_disabled: bool = False
+
+    # Set via WORKER_INTENT on intent worker containers
+    worker_intent: str = ""
+    worker_port: int = 8011
+
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: str = ""
+    redis_enabled: bool = True
+    redis_cache_ttl_seconds: int = 300
+    redis_rate_limit_per_minute: int = 30
+    redis_request_state_ttl_seconds: int = 120
 
     dlp_agent_url: str = "http://localhost:8001"
     text_to_sql_agent_url: str = "http://localhost:8002"

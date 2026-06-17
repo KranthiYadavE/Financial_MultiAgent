@@ -1,5 +1,7 @@
 # Learning Roadmap by Component
 
+> **Start here:** [FILE_GUIDE.md](FILE_GUIDE.md) lists every file and a recommended reading order.
+
 ## FastAPI Microservices
 **What to learn:** routing, Pydantic models, lifespan hooks, middleware  
 **Files:** `services/*/main.py`, `shared/fastapi_app.py`  
@@ -20,10 +22,19 @@
 **Files:** `shared/dlp.py`, `services/dlp_agent/main.py`  
 **Exercise:** Add Aadhaar number detection pattern
 
-## Kafka Event Bus
-**What to learn:** producers, consumers, topics, event-driven architecture  
-**Files:** `services/orchestrator/kafka_bus.py`  
-**Exercise:** Add a consumer that logs all `agent.responses` events
+## Kafka Event Bus (production patterns)
+**What to learn:** topics, partitions, partition keys, consumer groups, DLQ, horizontal scaling  
+**Files:** `shared/kafka_topics.py`, `services/orchestrator/kafka_bus.py`, `shared/kafka_worker.py`, `services/workers/main.py`, `scripts/init_kafka_topics.sh`  
+**Guide:** [KAFKA_GUIDE.md](KAFKA_GUIDE.md)  
+**Exercises:**
+- Scale `sql-worker` to 2 replicas and inspect `kafka-consumer-groups`
+- Trace one `correlation_id` from orchestrator → intent topic → worker → responses topic
+- Read a message from `agent.requests.dlq` after a simulated agent failure
+
+## Redis Cache & Rate Limiting
+**What to learn:** TTL caches, sliding-window rate limits, request state  
+**Files:** `shared/redis_client.py`, orchestrator `/cache/status`  
+**Exercise:** Add a cache invalidation endpoint; tune `REDIS_RATE_LIMIT_PER_MINUTE`
 
 ## Medallion Architecture
 **What to learn:** Bronze (raw) → Silver (cleaned) → Gold (analytics-ready)  
@@ -48,6 +59,7 @@
 ## Recommended Free Resources
 - FastAPI docs: https://fastapi.tiangolo.com
 - Qdrant docs: https://qdrant.tech/documentation
+- Kafka concepts: https://kafka.apache.org/documentation
 - Prometheus: https://prometheus.io/docs
 - LangChain: https://python.langchain.com
 - Ollama: https://ollama.com

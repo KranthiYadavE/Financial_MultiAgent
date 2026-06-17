@@ -54,12 +54,24 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     healthcheck:
       test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
       interval: 10s
       timeout: 10s
       retries: 10
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.1
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./scripts/init_kafka_topics.sh:/init_kafka_topics.sh:ro
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    entrypoint: ["/bin/bash", "/init_kafka_topics.sh"]
+    restart: "no"
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
@@ -118,6 +130,19 @@ services:
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   dlp-agent:
     build:
@@ -204,8 +229,13 @@ services:
       TEXT_TO_SQL_AGENT_URL: http://text-to-sql-agent:8002
       RAG_AGENT_URL: http://rag-agent:8003
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_TOPIC_REQUESTS: ${KAFKA_TOPIC_REQUESTS:-agent.requests}
-      KAFKA_TOPIC_RESPONSES: ${KAFKA_TOPIC_RESPONSES:-agent.responses}
+      KAFKA_TOPIC_RESPONSES: agent.responses
+      KAFKA_TOPIC_DLQ: agent.requests.dlq
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_ENABLED: "true"
+      REDIS_CACHE_TTL_SECONDS: ${REDIS_CACHE_TTL_SECONDS:-300}
+      REDIS_RATE_LIMIT_PER_MINUTE: ${REDIS_RATE_LIMIT_PER_MINUTE:-30}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -213,16 +243,125 @@ services:
     depends_on:
       dlp-agent:
         condition: service_healthy
-      text-to-sql-agent:
-        condition: service_healthy
-      rag-agent:
-        condition: service_healthy
       kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      sql-worker:
+        condition: service_healthy
+      rag-worker:
+        condition: service_healthy
+      dlp-worker:
+        condition: service_healthy
+      fallback-worker:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Intent-specific Kafka workers (scale with: docker compose up --scale sql-worker=2) ---
+  x-worker-env: &worker-env
+    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    KAFKA_TOPIC_RESPONSES: agent.responses
+    KAFKA_TOPIC_DLQ: agent.requests.dlq
+    TEXT_TO_SQL_AGENT_URL: http://text-to-sql-agent:8002
+    RAG_AGENT_URL: http://rag-agent:8003
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+    REDIS_ENABLED: "true"
+    REDIS_CACHE_TTL_SECONDS: ${REDIS_CACHE_TTL_SECONDS:-300}
+    LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+  sql-worker:
+    build:
+      context: .
+      dockerfile: services/workers/Dockerfile
+    environment:
+      <<: *worker-env
+      WORKER_INTENT: text_to_sql
+      WORKER_PORT: 8011
+    ports:
+      - "8011:8011"
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      text-to-sql-agent:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rag-worker:
+    build:
+      context: .
+      dockerfile: services/workers/Dockerfile
+    environment:
+      <<: *worker-env
+      WORKER_INTENT: faq_rag
+      WORKER_PORT: 8012
+    ports:
+      - "8012:8012"
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      rag-agent:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8012/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dlp-worker:
+    build:
+      context: .
+      dockerfile: services/workers/Dockerfile
+    environment:
+      <<: *worker-env
+      WORKER_INTENT: dlp_only
+      WORKER_PORT: 8013
+    ports:
+      - "8013:8013"
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8013/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fallback-worker:
+    build:
+      context: .
+      dockerfile: services/workers/Dockerfile
+    environment:
+      <<: *worker-env
+      WORKER_INTENT: fallback
+      WORKER_PORT: 8014
+    ports:
+      - "8014:8014"
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8014/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -258,3 +397,4 @@ volumes:
   elasticsearch_data:
   prometheus_data:
   grafana_data:
+  redis_data:
