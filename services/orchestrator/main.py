@@ -335,6 +335,24 @@ async def kafka_status():
     }
 
 
+@app.get("/mcp/info")
+async def mcp_info():
+    return {
+        "mcp_server_port": settings.mcp_server_port,
+        "stdio_entrypoint": "python -m services.mcp_server.run_stdio",
+        "http_entrypoint": f"http://localhost:{settings.mcp_server_port}",
+        "tools": [
+            "mcp_query_transactions",
+            "mcp_ask_policy",
+            "mcp_mask_sensitive_text",
+            "mcp_financial_chat",
+            "mcp_agents_health",
+        ],
+        "docs": "docs/MCP_GUIDE.md",
+        "cursor_config_example": ".cursor/mcp.json.example",
+    }
+
+
 @app.get("/cache/status")
 async def cache_status():
     return {

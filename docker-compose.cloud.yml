@@ -1,0 +1,194 @@
+# Cloud VM / single-server deployment (Oracle Free Tier, AWS EC2 t3.micro, etc.)
+# Usage on Ubuntu VM:
+#   git clone <repo> && cd GENAI_TESTING
+#   cp deploy/cloud/.env.cloud.example .env
+#   docker compose -f docker-compose.cloud.yml up -d --build
+#   docker compose -f docker-compose.cloud.yml --profile init run --rm data-init
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-finagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finagent_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-financial_gold}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finagent -d financial_gold"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.5
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6333/readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  dlp-agent:
+    build:
+      context: .
+      dockerfile: services/dlp_agent/Dockerfile
+    restart: unless-stopped
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENVIRONMENT: cloud
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  text-to-sql-agent:
+    build:
+      context: .
+      dockerfile: services/text_to_sql_agent/Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-finagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finagent_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-financial_gold}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  rag-agent:
+    build:
+      context: .
+      dockerfile: services/rag_agent/Dockerfile
+    restart: unless-stopped
+    environment:
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-faq_policies}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    volumes:
+      - ./data/docs:/app/data/docs:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: services/orchestrator/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${ORCHESTRATOR_PORT:-8000}:8000"
+    environment:
+      DLP_AGENT_URL: http://dlp-agent:8001
+      TEXT_TO_SQL_AGENT_URL: http://text-to-sql-agent:8002
+      RAG_AGENT_URL: http://rag-agent:8003
+      KAFKA_BOOTSTRAP_SERVERS: disabled
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_ENABLED: "true"
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENVIRONMENT: cloud
+    depends_on:
+      dlp-agent:
+        condition: service_healthy
+      text-to-sql-agent:
+        condition: service_healthy
+      rag-agent:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: services/mcp_server/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${MCP_SERVER_PORT:-8020}:8020"
+    environment:
+      ORCHESTRATOR_URL: http://orchestrator:8000
+      DLP_AGENT_URL: http://dlp-agent:8001
+      TEXT_TO_SQL_AGENT_URL: http://text-to-sql-agent:8002
+      RAG_AGENT_URL: http://rag-agent:8003
+      MCP_SERVER_PORT: 8020
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+
+  data-init:
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-finagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finagent_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-financial_gold}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-faq_policies}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    profiles:
+      - init
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  redis_data:

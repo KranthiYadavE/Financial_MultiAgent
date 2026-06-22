@@ -31,6 +31,11 @@ flowchart TB
     RAG --> QD[(Qdrant Vector DB)]
 
     Orch --> Prom[Prometheus]
+    Orch --> MCP[MCP Server :8020]
+    MCP --> Orch
+    MCP --> SQL
+    MCP --> RAG
+    MCP --> DLP
     Orch --> Logs[JSON Logs]
     Logs --> LS[Logstash] --> ES[(Elasticsearch)] --> Kib[Kibana]
 
@@ -55,6 +60,18 @@ flowchart TB
 - **Auto-create:** disabled — topics must be provisioned explicitly
 
 See [KAFKA_GUIDE.md](KAFKA_GUIDE.md) for hands-on labs.
+
+## MCP (Model Context Protocol)
+
+LLM clients (Cursor, Claude Desktop) connect to **`mcp-server`** on port **8020** (HTTP) or **stdio** locally.
+
+| MCP type | Examples in this repo |
+|----------|----------------------|
+| Tools | `mcp_query_transactions`, `mcp_ask_policy`, `mcp_financial_chat` |
+| Resources | Gold schema, FAQ index, Kafka topic map |
+| Prompts | Analyze spending, policy review, safe PII |
+
+See [MCP_GUIDE.md](MCP_GUIDE.md) and [FULL_LEARNING_PLAN.md](FULL_LEARNING_PLAN.md) Week 6.
 
 ## Medallion Data Flow
 
@@ -113,6 +130,7 @@ docker compose up -d --scale rag-worker=2
 
 ## Study Map
 
+- **Complete 12-week plan:** [FULL_LEARNING_PLAN.md](FULL_LEARNING_PLAN.md)
 - **Every file explained:** [FILE_GUIDE.md](FILE_GUIDE.md)
 - **Kafka deep dive:** [KAFKA_GUIDE.md](KAFKA_GUIDE.md)
 - **Week-by-week checklist:** [BUILD_CHECKLIST.md](BUILD_CHECKLIST.md)

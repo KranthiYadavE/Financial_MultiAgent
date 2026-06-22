@@ -23,3 +23,4 @@ sqlparse==0.5.3
 faker==33.1.0
 python-multipart==0.0.20
 tenacity==9.0.0
+mcp>=1.27.0,<2

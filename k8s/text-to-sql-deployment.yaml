@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: text-to-sql-agent
+  namespace: financial-agents
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: text-to-sql-agent
+  template:
+    metadata:
+      labels:
+        app: text-to-sql-agent
+    spec:
+      containers:
+        - name: text-to-sql-agent
+          image: ghcr.io/kranthiyadave/financial-multiagent/text-to-sql-agent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8002
+          envFrom:
+            - configMapRef:
+                name: agent-config
+            - secretRef:
+                name: agent-secrets
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: text-to-sql-agent
+  namespace: financial-agents
+spec:
+  selector:
+    app: text-to-sql-agent
+  ports:
+    - port: 8002
+      targetPort: 8002

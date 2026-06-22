@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-server
+  namespace: financial-agents
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-server
+  template:
+    metadata:
+      labels:
+        app: mcp-server
+    spec:
+      containers:
+        - name: mcp-server
+          image: ghcr.io/kranthiyadave/financial-multiagent/mcp-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8020
+          envFrom:
+            - configMapRef:
+                name: agent-config
+          env:
+            - name: ORCHESTRATOR_URL
+              value: http://orchestrator:8000
+            - name: DLP_AGENT_URL
+              value: http://dlp-agent:8001
+            - name: TEXT_TO_SQL_AGENT_URL
+              value: http://text-to-sql-agent:8002
+            - name: RAG_AGENT_URL
+              value: http://rag-agent:8003
+            - name: MCP_SERVER_PORT
+              value: "8020"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-server
+  namespace: financial-agents
+spec:
+  selector:
+    app: mcp-server
+  ports:
+    - port: 8020
+      targetPort: 8020

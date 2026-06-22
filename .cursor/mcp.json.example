@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "financial-multi-agent": {
+      "command": "python",
+      "args": ["-m", "services.mcp_server.run_stdio"],
+      "cwd": "C:/Users/HP/OneDrive/Desktop/New folder/GENAI_TESTING",
+      "env": {
+        "ORCHESTRATOR_URL": "http://localhost:8000",
+        "DLP_AGENT_URL": "http://localhost:8001",
+        "TEXT_TO_SQL_AGENT_URL": "http://localhost:8002",
+        "RAG_AGENT_URL": "http://localhost:8003"
+      }
+    }
+  }
+}

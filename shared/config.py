@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     dlp_agent_url: str = "http://localhost:8001"
     text_to_sql_agent_url: str = "http://localhost:8002"
     rag_agent_url: str = "http://localhost:8003"
+    orchestrator_url: str = "http://localhost:8000"
+    mcp_server_port: int = 8020
 
     @property
     def postgres_dsn(self) -> str:

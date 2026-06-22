@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: financial-agents
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.example.yaml
+  - redis-deployment.yaml
+  - dlp-agent-deployment.yaml
+  - text-to-sql-deployment.yaml
+  - rag-agent-deployment.yaml
+  - orchestrator-deployment.yaml
+  - sql-worker-deployment.yaml
+  - mcp-server-deployment.yaml
+  - ingress.yaml
+  - hpa-orchestrator.yaml
+
+# Override image registry after pushing to GHCR:
+# images:
+#   - name: ghcr.io/kranthiyadave/financial-multiagent/orchestrator
+#     newTag: v1.0.0

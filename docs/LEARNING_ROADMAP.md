@@ -1,6 +1,7 @@
 # Learning Roadmap by Component
 
-> **Start here:** [FILE_GUIDE.md](FILE_GUIDE.md) lists every file and a recommended reading order.
+> **Master plan:** [FULL_LEARNING_PLAN.md](FULL_LEARNING_PLAN.md) — 12-week complete path  
+> **File index:** [FILE_GUIDE.md](FILE_GUIDE.md)
 
 ## FastAPI Microservices
 **What to learn:** routing, Pydantic models, lifespan hooks, middleware  
@@ -31,6 +32,15 @@
 - Trace one `correlation_id` from orchestrator → intent topic → worker → responses topic
 - Read a message from `agent.requests.dlq` after a simulated agent failure
 
+## MCP (Model Context Protocol)
+**What to learn:** tools, resources, prompts, stdio vs HTTP transport, Cursor integration  
+**Files:** `services/mcp_server/server.py`, `shared/mcp_handlers.py`, `scripts/mcp_client_demo.py`  
+**Guide:** [MCP_GUIDE.md](MCP_GUIDE.md)  
+**Exercises:**
+- Add a new MCP tool `mcp_kafka_status` that calls `/kafka/status`
+- Register a new resource with sample transaction schema
+- Use MCP Inspector against `http://localhost:8020`
+
 ## Redis Cache & Rate Limiting
 **What to learn:** TTL caches, sliding-window rate limits, request state  
 **Files:** `shared/redis_client.py`, orchestrator `/cache/status`  
@@ -53,8 +63,18 @@
 
 ## Kubernetes
 **What to learn:** Deployments, Services, ConfigMaps, probes, autoscaling  
-**Files:** `k8s/`  
-**Exercise:** Deploy to minikube and scale orchestrator to 3 replicas
+**Files:** `k8s/`, `k8s/README.md`  
+**Guide:** [CLOUD_DEPLOYMENT.md](CLOUD_DEPLOYMENT.md)  
+**Exercise:** Deploy to minikube and scale orchestrator with HPA
+
+## Cloud Deployment
+**What to learn:** VM deploy, GHCR, CI/CD, managed Postgres/Redis/Kafka  
+**Files:** `docker-compose.cloud.yml`, `deploy/`, `.github/workflows/docker-publish.yml`  
+**Guide:** [CLOUD_DEPLOYMENT.md](CLOUD_DEPLOYMENT.md)  
+**Exercises:**
+- Deploy to Oracle Cloud free VM with `docker-compose.cloud.yml`
+- Push images via GitHub Actions to GHCR
+- Connect Neon Postgres as external database
 
 ## Recommended Free Resources
 - FastAPI docs: https://fastapi.tiangolo.com

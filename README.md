@@ -10,6 +10,7 @@ A **production-style**, **100% open-source** learning project for building a fin
 | Policy / FAQ answers | RAG | Qdrant + embeddings |
 | PII masking | DLP | Regex + hard filtering |
 | Request routing | Orchestrator | Keyword + Ollama classifier |
+| LLM tool access | MCP Server | Tools, resources, prompts (Cursor-ready) |
 | Event workflows | Kafka | Intent topics + partitions + DLQ |
 | Caching / rate limits | Redis | Response cache + throttling |
 | Logs | ELK | Elasticsearch + Logstash + Kibana |
@@ -18,7 +19,7 @@ A **production-style**, **100% open-source** learning project for building a fin
 ## Architecture
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for diagrams.  
-**Study guides:** [FILE_GUIDE.md](docs/FILE_GUIDE.md) · [KAFKA_GUIDE.md](docs/KAFKA_GUIDE.md)
+**Study guides:** [FULL_LEARNING_PLAN.md](docs/FULL_LEARNING_PLAN.md) · [FILE_GUIDE.md](docs/FILE_GUIDE.md) · [KAFKA_GUIDE.md](docs/KAFKA_GUIDE.md) · [MCP_GUIDE.md](docs/MCP_GUIDE.md) · [CLOUD_DEPLOYMENT.md](docs/CLOUD_DEPLOYMENT.md)
 
 ```
 User → Orchestrator → [DLP] → Router → Kafka (intent topics)
@@ -39,6 +40,7 @@ GENAI_TESTING/
 ├── services/
 │   ├── orchestrator/           # Router + Kafka producer
 │   ├── workers/                # Intent-specific Kafka consumers
+│   ├── mcp_server/             # MCP tools/resources for LLM clients
 │   ├── text_to_sql_agent/      # NL → SQL → transactions
 │   ├── rag_agent/              # FAQ/policy semantic search
 │   └── dlp_agent/              # PII masking + SQL validation
@@ -55,10 +57,14 @@ GENAI_TESTING/
 │   └── docs/                   # Generated FAQ/policy JSON + txt
 ├── infra/postgres/init.sql     # Gold schema + read-only role
 ├── monitoring/                 # Prometheus, Grafana, Logstash
-├── k8s/                        # Kubernetes manifests (learning)
+├── deploy/                     # Cloud VM bootstrap + image build scripts
+├── k8s/                        # Kubernetes manifests (Ingress, HPA)
 └── docs/
+    ├── FULL_LEARNING_PLAN.md   # 12-week complete study path
     ├── FILE_GUIDE.md           # What every file does
     ├── KAFKA_GUIDE.md          # Topics, partitions, DLQ, scaling labs
+    ├── MCP_GUIDE.md            # Model Context Protocol + Cursor setup
+    ├── CLOUD_DEPLOYMENT.md     # VM, Kubernetes, GHCR, managed cloud
     ├── ARCHITECTURE.md         # System diagrams
     ├── BUILD_CHECKLIST.md      # Week-by-week tasks
     └── LEARNING_ROADMAP.md     # What to study per component

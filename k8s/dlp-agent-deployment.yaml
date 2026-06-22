@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dlp-agent
+  namespace: financial-agents
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dlp-agent
+  template:
+    metadata:
+      labels:
+        app: dlp-agent
+    spec:
+      containers:
+        - name: dlp-agent
+          image: ghcr.io/kranthiyadave/financial-multiagent/dlp-agent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: agent-config
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dlp-agent
+  namespace: financial-agents
+spec:
+  selector:
+    app: dlp-agent
+  ports:
+    - port: 8001
+      targetPort: 8001

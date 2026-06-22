@@ -366,6 +366,23 @@ services:
       timeout: 5s
       retries: 5
 
+  mcp-server:
+    build:
+      context: .
+      dockerfile: services/mcp_server/Dockerfile
+    ports:
+      - "8020:8020"
+    environment:
+      ORCHESTRATOR_URL: http://orchestrator:8000
+      DLP_AGENT_URL: http://dlp-agent:8001
+      TEXT_TO_SQL_AGENT_URL: http://text-to-sql-agent:8002
+      RAG_AGENT_URL: http://rag-agent:8003
+      MCP_SERVER_PORT: 8020
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+
   data-init:
     build:
       context: .

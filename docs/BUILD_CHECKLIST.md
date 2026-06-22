@@ -7,6 +7,7 @@ Use this as your hands-on learning path. Check off each item as you complete it.
 - [ ] Install Docker Desktop
 - [ ] Install Ollama from https://ollama.com and run `ollama pull llama3.2:3b`
 - [ ] Copy `.env.example` → `.env`
+- [ ] Read [FULL_LEARNING_PLAN.md](FULL_LEARNING_PLAN.md) — master 12-week path
 - [ ] Read [FILE_GUIDE.md](FILE_GUIDE.md) — understand project layout
 - [ ] Read `scripts/generate_sample_data.py` — understand Bronze/Silver/Gold
 - [ ] Run `python scripts/generate_sample_data.py` locally
@@ -46,7 +47,17 @@ Use this as your hands-on learning path. Check off each item as you complete it.
 - [ ] Inspect consumer group: `docker compose exec kafka kafka-consumer-groups --bootstrap-server localhost:9092 --describe --group sql-worker-group`
 - [ ] Inspect DLQ topic (after simulating failures): `agent.requests.dlq`
 
-## Week 7: Observability
+## Week 7: MCP (Model Context Protocol)
+
+- [ ] Read [MCP_GUIDE.md](MCP_GUIDE.md) and [FULL_LEARNING_PLAN.md](FULL_LEARNING_PLAN.md) Week 6
+- [ ] Read `services/mcp_server/server.py` and `shared/mcp_handlers.py`
+- [ ] `pip install "mcp>=1.27,<2"` then `python scripts/mcp_client_demo.py`
+- [ ] `GET http://localhost:8000/mcp/info`
+- [ ] Copy `.cursor/mcp.json.example` → `.cursor/mcp.json` and enable in Cursor
+- [ ] `docker compose up -d mcp-server` — HTTP MCP on port 8020
+- [ ] Call `mcp_financial_chat` from Cursor; trace with correlation ID
+
+## Week 8: Observability
 
 - [ ] Open Grafana http://localhost:3000 (admin/admin)
 - [ ] Open Prometheus http://localhost:9090 — query `orchestrator_requests_total`
@@ -55,14 +66,31 @@ Use this as your hands-on learning path. Check off each item as you complete it.
 - [ ] Generate load with `test_api.py` and watch dashboards
 - [ ] Find a slow request via latency histograms
 
-## Week 8–9: Deployment
+## Week 9–10: Cloud VM Deployment
 
-- [ ] Build images: `docker compose build`
-- [ ] Read `k8s/` manifests
-- [ ] Deploy to minikube or kind (optional): `kubectl apply -f k8s/`
-- [ ] Configure HPA and resource limits (exercise)
+- [ ] Read [CLOUD_DEPLOYMENT.md](CLOUD_DEPLOYMENT.md) Tier 2
+- [ ] Create Oracle Cloud / AWS free VM
+- [ ] Run `deploy/vm/setup-ubuntu.sh`
+- [ ] Deploy with `docker-compose.cloud.yml`
+- [ ] Open firewall ports 8000, 8020
+- [ ] Test API from your PC: `curl http://VM_IP:8000/health`
 
-## Week 10: Cloud (free tier options)
+## Week 11: Kubernetes + CI/CD
+
+- [ ] Read `k8s/README.md` and [CLOUD_DEPLOYMENT.md](CLOUD_DEPLOYMENT.md) Tier 3
+- [ ] `minikube start` and `kubectl apply -k k8s/`
+- [ ] Run `./deploy/scripts/build-images.ps1`
+- [ ] Enable GitHub Actions workflow `.github/workflows/docker-publish.yml`
+- [ ] Inspect HPA: `kubectl get hpa -n financial-agents`
+
+## Week 12: Managed Cloud Services (Optional)
+
+- [ ] Read [CLOUD_DEPLOYMENT.md](CLOUD_DEPLOYMENT.md) Tier 4
+- [ ] Create free Neon Postgres or Upstash Redis
+- [ ] Point `.env` to managed services
+- [ ] Document your cloud architecture in README
+
+## Week 13: Portfolio
 
 - [ ] Oracle Cloud free tier / GCP trial / local only
 - [ ] Move parquet to MinIO (S3-compatible, free)

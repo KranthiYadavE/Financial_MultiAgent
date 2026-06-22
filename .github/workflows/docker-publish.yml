@@ -1,0 +1,51 @@
+name: Build and Publish Docker Images
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/financial-multiagent
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: orchestrator
+            dockerfile: services/orchestrator/Dockerfile
+          - name: dlp-agent
+            dockerfile: services/dlp_agent/Dockerfile
+          - name: text-to-sql-agent
+            dockerfile: services/text_to_sql_agent/Dockerfile
+          - name: rag-agent
+            dockerfile: services/rag_agent/Dockerfile
+          - name: sql-worker
+            dockerfile: services/workers/Dockerfile
+          - name: mcp-server
+            dockerfile: services/mcp_server/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:latest
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:${{ github.sha }}
